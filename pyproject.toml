@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "phasefield-fracture"
+version = "0.1.0"
+description = "Self-contained phase-field (AT1/AT2) brittle-fracture solver with closed-form verification and heterogeneous-material support."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Vikrant Chauhan" }]
+keywords = ["phase-field", "fracture-mechanics", "finite-element",
+            "crack-propagation", "computational-mechanics", "AT1", "AT2"]
+dependencies = [
+    "numpy>=1.23",
+    "scipy>=1.9",
+    "matplotlib>=3.5",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7.0"]
+
+[project.urls]
+Homepage = "https://github.com/vikranthacker/phasefield-fracture"
+
+[tool.setuptools]
+packages = ["phasefield"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
