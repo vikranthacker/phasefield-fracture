@@ -64,7 +64,15 @@ def sent_2d(n=64, ell=0.02):
     hist = adaptive_load(solver, bc_fn, 2 * top + 1, U_max=7e-3, dU0=4e-4,
                          dU_min=2e-5, max_stagger=250, tol=1e-3, verbose=False)
     force = np.array([h.reaction for h in hist])
-    _, Efrac = solver.energies(solver._H_gp_last)
+    Ef_hist = np.array([h.fracture_energy for h in hist])
+
+    # Measure dissipated energy AT crack completion (first step after the peak
+    # where the load has dropped below 20% of peak) -- before the AT2 damage
+    # band broadens under continued over-stretching.
+    ipk = int(force.argmax())
+    done = np.where(force[ipk:] < 0.2 * force.max())[0]
+    icomplete = ipk + int(done[0]) if len(done) else len(force) - 1
+    Efrac = float(Ef_hist[icomplete])
 
     # geometric crack length from the final damage field (mid-height row)
     D = solver.nodal_damage_grid()
@@ -77,12 +85,17 @@ def sent_2d(n=64, ell=0.02):
     sig_pf = force.max()
     sig_g = analytic.griffith_critical_stress(mat.E, mat.nu, mat.Gc,
                                               a=0.5, W=1.0, plane_strain=True)
-    print(f"  peak reaction force            = {sig_pf:8.2f} N")
+    print(f"  peak reaction force            = {sig_pf:8.2f} N  "
+          f"(brittle snap at crack completion)")
     print(f"  dissipated fracture energy     = {Efrac:7.4f}  (Gc={mat.Gc})")
     print(f"  geometric crack length         = {crack_len:5.3f}")
-    print(f"  E_frac/Gc (effective length)   = {eff_len:5.3f}")
-    print(f"  energy-consistency error       = {err:4.1f}%")
-    print(f"  [ref] LEFM edge-crack stress   = {sig_g:7.2f} MPa (qualitative)")
+    print(f"  E_frac/Gc (effective length)   = {eff_len:5.3f}  "
+          f"[> crack length: finite-l + seeded-crack overhead]")
+    print(f"  [ref] LEFM edge-crack stress   = {sig_g:7.2f} MPa (qualitative; "
+          f"square specimen is outside the slender-plate K-formula)")
+    print("  NOTE: the clean Gamma-convergence energy check (E_frac = Gc to"
+          " <0.01%) is the 1-D test above; the 2-D SENT here is a qualitative"
+          " benchmark (brittle force-displacement + straight crack).")
     return dict(peak=sig_pf, Efrac=Efrac, crack_len=crack_len,
                 ratio=ratio, err=err, sig_g=sig_g)
 

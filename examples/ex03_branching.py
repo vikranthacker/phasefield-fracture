@@ -1,13 +1,16 @@
-"""Example 3 -- Crack branching.
+"""Example 3 -- Crack branching / path selection among competing weak channels.
 
-Dynamic crack branching is driven by inertia (a running crack whose speed
-exceeds a critical fraction of the Rayleigh wave speed becomes unstable and
-splits).  The solver here is quasi-static, so we trigger a *quasi-static* branch
-through the microstructure: two symmetric weak channels (reduced Gc) diverge
-ahead of the notch tip, and the propagating crack splits to follow both.  This
-demonstrates branched morphologies and their control by material heterogeneity.
+Two symmetric weak channels (reduced Gc) diverge ahead of the notch tip, so the
+crack faces a genuine branch point.  In the *quasi-static* energy-minimizing
+model the crack selects ONE channel: as soon as one branch starts to open it
+relaxes the crack-driving force for the other (symmetry breaking), so the second
+branch remains incipient.  This is the physically correct quasi-static picture,
+and it demonstrates how heterogeneity controls the branch that is taken.
 
-(A fully inertial dynamic solver is listed as future work in the README.)
+True simultaneous (symmetric) branching is an *inertial* phenomenon -- it occurs
+when a running crack exceeds a critical fraction of the Rayleigh wave speed --
+and needs a dynamic solver (mass term + explicit time stepping), listed as
+future work in the README.
 
 Run:  python examples/ex03_branching.py --n 120
 """
@@ -59,8 +62,9 @@ def run(n=120, ell=0.012, U_max=9.0e-3, dU0=4e-4):
 
     os.makedirs(RESULTS, exist_ok=True)
     fig, ax = plt.subplots(1, 2, figsize=(11, 4.4))
-    toughness_map(mesh, Gc, ax=ax[0], title="weak channels ($0.35\\,G_c$)")
-    plot_damage(mesh, solver.d, ax=ax[1], title="branched crack")
+    toughness_map(mesh, Gc, ax=ax[0], title="competing weak channels ($0.35\\,G_c$)")
+    plot_damage(mesh, solver.d, ax=ax[1],
+                title="crack selects one branch (quasi-static)")
     fig.tight_layout()
     fig.savefig(os.path.join(RESULTS, "branching.png"), dpi=130)
     np.savez(os.path.join(RESULTS, "branching.npz"), damage=solver.d, Gc=Gc, n=n)

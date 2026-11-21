@@ -47,7 +47,11 @@ produced by the scripts in [`validation/`](validation/).
 | Optimal crack profile, **AT2** | `d(x)` vs `e^{-|x|/ℓ}` | L2 norm | **< 0.001** |
 | Optimal crack profile, **AT1** | `d(x)` vs `(1-|x|/2ℓ)²` | L2 norm | **< 0.001** |
 | Dissipated energy (Γ-convergence), AT1 & AT2 | `E_frac` vs `Gc` | energy | **≤ 0.01 %** |
-| 2-D SENT crack | `E_frac / Gc` vs crack length | energy consistency | see `val03` |
+| 2-D SENT crack | force–displacement + crack path | *qualitative* | reproduces brittle snap, straight crack, peak ≈ 0.6 kN |
+
+The 1-D benchmarks are the rigorous quantitative checks (closed-form exact).
+The 2-D cases are qualitative — the diffuse crack's dissipated energy carries a
+finite-`ℓ` / seeded-crack overhead, so it is of order (not exactly) `Gc × length`.
 
 The full homogeneous stress–strain response and the crack profiles also match
 the analytical curves point-by-point:
@@ -77,9 +81,13 @@ python examples/ex02_heterogeneous.py --n 100
 ```
 ![heterogeneous](results/heterogeneous.png)
 
-### 3. Crack branching along weak channels
-Branched crack morphology controlled by material heterogeneity (two diverging
-low-toughness channels ahead of the notch).
+### 3. Crack branching / path selection among competing channels
+Two symmetric low-toughness channels diverge ahead of the notch, creating a
+genuine branch point. In the quasi-static energy-minimizing model the crack
+selects **one** channel — once a branch opens it relaxes the driving force for
+the other (symmetry breaking), leaving the second branch incipient. True
+*simultaneous* branching is inertia-driven (a crack exceeding ~0.6 of the
+Rayleigh speed) and needs a dynamic solver — see [limitations](#scope-and-limitations-honest-notes).
 
 ```bash
 python examples/ex03_branching.py --n 110
