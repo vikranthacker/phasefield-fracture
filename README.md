@@ -5,10 +5,10 @@ a compact, self-contained phase-field solver for brittle fracture, written in
 pure NumPy/SciPy and *verified against closed-form solutions*.
 
 The model (Ambrosio–Tortorelli AT1/AT2 regularization of Griffith fracture,
-history-field irreversibility, volumetric–deviatoric energy split) mirrors the
-[PhaseFieldX](https://github.com/CastillonMiguel/phasefieldx) / FEniCSx
-community formulation, so results are directly comparable — but it runs
-anywhere Python does, with no FEniCSx/DOLFINx/MPI toolchain required.
+history-field irreversibility, volumetric–deviatoric energy split) follows the
+standard variational phase-field formulation, so results are directly
+comparable with published benchmarks — but it runs anywhere Python does, with
+no FEniCSx/DOLFINx/MPI toolchain required.
 
 > Built as a focused study of crack propagation in **heterogeneous** media:
 > spatially varying fracture toughness, crack-path deflection and sensitivity,
@@ -177,14 +177,13 @@ See [`docs/theory.md`](docs/theory.md) for the full formulation.
 - **Direct sparse solves** (SciPy SuperLU): excellent up to ~10⁴–10⁵ dofs, which
   is the practical range for a pure-Python solver.
 
-## Relation to PhaseFieldX
+## Design
 
-[PhaseFieldX](https://github.com/CastillonMiguel/phasefieldx) is a FEniCSx-based
-framework for phase-field simulation. This project implements the same
-underlying models (AT1/AT2, `(1-d)²` degradation, history-field irreversibility,
-energy splits) independently in NumPy/SciPy, trading FEniCSx's generality and
-performance for zero-dependency portability and transparency — every line of the
-method is in this repo and checked against analytical benchmarks.
+This project implements the standard variational phase-field fracture models
+(AT1/AT2, `(1-d)²` degradation, history-field irreversibility, energy splits)
+from scratch in pure NumPy/SciPy, trading the generality and performance of a
+FEniCSx/DOLFINx stack for zero-dependency portability and transparency — every
+line of the method is in this repo and checked against analytical benchmarks.
 
 ## References
 

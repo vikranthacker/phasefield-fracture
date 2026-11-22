@@ -1,7 +1,7 @@
 """Phase-field model configuration: material, regularization, energy split.
 
-Two Ambrosio-Tortorelli regularizations are supported (the same ones used by
-the PhaseFieldX / FEniCSx community):
+Two Ambrosio-Tortorelli regularizations are supported (the standard ones from
+the variational phase-field fracture literature):
 
 * ``AT2`` (Bourdin):   w(d) = d^2 ,  no elastic stage, damage from zero load.
 * ``AT1`` (Pham-Marigo): w(d) = d ,  genuine elastic stage up to a threshold.

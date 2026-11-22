@@ -3,8 +3,8 @@
 A compact, dependency-light (NumPy/SciPy) implementation of the Ambrosio-
 Tortorelli (AT1/AT2) variational phase-field model for brittle fracture, with a
 staggered solver, heterogeneous-material support, and verification against
-closed-form solutions.  Model choices mirror the PhaseFieldX / FEniCSx
-community so results are directly comparable.
+closed-form solutions.  Model choices follow the standard variational
+phase-field fracture literature, so results are directly comparable.
 """
 from .mesh import StructuredMesh
 from .model import Material, PhaseFieldModel

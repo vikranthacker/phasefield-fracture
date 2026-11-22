@@ -2,8 +2,8 @@
 
 This note documents the model and discretization implemented in the
 `phasefield` package. The formulation follows the standard variational
-(Ambrosio–Tortorelli) phase-field approach to brittle fracture used by the
-FEniCSx / PhaseFieldX community, so results are directly comparable.
+(Ambrosio–Tortorelli) phase-field approach to brittle fracture, so results are
+directly comparable with the standard literature benchmarks.
 
 ## 1. Variational phase-field model
 
