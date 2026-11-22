@@ -18,9 +18,11 @@ def plot_damage(mesh, d, ax=None, title=None, Gc_elem=None, show_toughness=False
     plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04, label="damage $d$")
     if show_toughness and Gc_elem is not None:
         Gg = Gc_elem.reshape(mesh.ny, mesh.nx)
-        ax.contour(np.linspace(0, mesh.Lx, mesh.nx),
-                   np.linspace(0, mesh.Ly, mesh.ny),
-                   Gg, levels=6, colors="cyan", linewidths=0.4, alpha=0.5)
+        # Gc lives at element centroids, not nodes -> offset by half a cell
+        xc = (np.arange(mesh.nx) + 0.5) * mesh.hx
+        yc = (np.arange(mesh.ny) + 0.5) * mesh.hy
+        ax.contour(xc, yc, Gg, levels=6, colors="cyan",
+                   linewidths=0.4, alpha=0.5)
     if title:
         ax.set_title(title)
     ax.set_xlabel("x"); ax.set_ylabel("y")

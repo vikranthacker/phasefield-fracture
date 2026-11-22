@@ -27,6 +27,8 @@ class StepResult:
     fracture_energy: float
     max_damage: float
     stagger_iters: int
+    converged: bool = True
+    final_delta: float = 0.0
 
 
 class StaggeredSolver:
@@ -71,6 +73,8 @@ class StaggeredSolver:
         mesh = self.mesh
         lo = self.d_committed.copy()
         K_last = None
+        delta = np.inf
+        converged = False
         for it in range(max_stagger):
             # (1) elasticity at frozen damage
             K = self.asm.assemble_elasticity(self.d, u_prev=self.u)
@@ -92,6 +96,7 @@ class StaggeredSolver:
                 print(f"    stagger {it:3d}  d-change={delta:.2e}")
             if delta < tol:
                 self._H_gp_last = H_gp
+                converged = True
                 break
         else:
             self._H_gp_last = H_gp
@@ -107,17 +112,23 @@ class StaggeredSolver:
                           elastic_energy=Eel,
                           fracture_energy=Efrac,
                           max_damage=float(self.d.max()),
-                          stagger_iters=it + 1)
+                          stagger_iters=it + 1,
+                          converged=converged,
+                          final_delta=float(delta))
 
     # ------------------------------------------------------------------
     def energies(self, H_gp):
         mesh, mdl = self.mesh, self.model
-        # elastic stored energy  int g(d) psi+  (+ psi- not tracked separately here)
+        # elastic stored energy  int [ g(d) psi+ + psi- ]  (full stored energy;
+        # psi- is the undegraded compressive part, nonzero only for the Amor
+        # split -- including it lets a global energy balance close).
         d_gp = self.asm.gp_damage(self.d)
         eps = self.asm.strain_at_gp(self.u)
         psi = mdl.psi_plus(eps)
+        psi_m = mdl.psi_minus(eps)
         w = mesh.gp_w                                   # (4,)
-        Eel = float(np.einsum('eg,eg,g->', mdl.g(d_gp), psi, w))
+        Eel = float(np.einsum('eg,eg,g->', mdl.g(d_gp), psi, w)
+                    + np.einsum('eg,g->', psi_m, w))
 
         # fracture energy  (Gc/cw) int [ w(d)/ell + ell |grad d|^2 ]
         d_e = self.d[mesh.elements]                     # (n_elem,4)
@@ -129,6 +140,17 @@ class StaggeredSolver:
             local = np.einsum('eg,g->e', d_gp, w) / mdl.ell
             Efrac = float(np.sum((3.0 / 8.0) * self.Gc_elem * (local + mdl.ell * grad_term)))
         return Eel, Efrac
+
+    # ------------------------------------------------------------------
+    def snapshot(self):
+        """Capture the committed state so a load step can be rolled back."""
+        return (self.d.copy(), self.d_committed.copy(),
+                self.u.copy(), self.H_committed.copy())
+
+    def restore(self, snap):
+        """Restore a state captured by :meth:`snapshot`."""
+        self.d, self.d_committed, self.u, self.H_committed = (
+            snap[0].copy(), snap[1].copy(), snap[2].copy(), snap[3].copy())
 
     # ------------------------------------------------------------------
     def nodal_damage_grid(self):
@@ -145,6 +167,14 @@ def adaptive_load(solver: "StaggeredSolver", bc_fn, reaction_dofs,
     The increment grows while steps converge quickly (elastic regime) and
     shrinks when a step needs many staggered iterations (crack propagation),
     which keeps the total solve count low without a monolithic scheme.
+
+    Robustness at the brittle snap: alternate minimization can exhaust
+    ``max_stagger`` without meeting ``tol`` on the unstable propagation step.
+    Such a step is **rejected** -- the solver is rolled back to the committed
+    state and the step is retried with a halved increment -- rather than
+    committing an unconverged configuration.  Only once ``dU`` has shrunk to
+    ``dU_min`` and the step still has not converged is it accepted (and flagged
+    ``converged=False``), so the loop cannot stall indefinitely.
     """
     dU = dU0
     dU_min = dU_min if dU_min is not None else dU0 / 40.0
@@ -154,18 +184,31 @@ def adaptive_load(solver: "StaggeredSolver", bc_fn, reaction_dofs,
     step = 0
     while U < U_max - 1e-12:
         dU = min(dU, U_max - U)
+        snap = solver.snapshot()
         U_try = U + dU
         fixed, values = bc_fn(U_try)
         res = solver.solve_step(fixed, values, reaction_dofs,
                                 max_stagger=max_stagger, tol=tol)
+
+        # reject a non-converged step and retry with a smaller increment
+        if not res.converged and dU > dU_min * (1.0 + 1e-9):
+            solver.restore(snap)
+            dU = max(dU * 0.5, dU_min)
+            if verbose:
+                print(f"step {step+1:3d}  REJECTED (iters={res.stagger_iters}, "
+                      f"d-change={res.final_delta:.2e} > tol={tol:.1e}); "
+                      f"retry with dU={dU:.2e}", flush=True)
+            continue
+
         res.disp = U_try
         history.append(res)
         U = U_try
         step += 1
         if verbose:
+            flag = "" if res.converged else "  [capped, not converged]"
             print(f"step {step:3d}  U={U:.5f}  F={res.reaction:10.2f}  "
                   f"dmax={res.max_damage:.3f}  Efrac={res.fracture_energy:.4f}  "
-                  f"iters={res.stagger_iters}  dU={dU:.2e}", flush=True)
+                  f"iters={res.stagger_iters}  dU={dU:.2e}{flag}", flush=True)
         # forward adaptation
         if res.stagger_iters > hi_iter:
             dU = max(dU * 0.5, dU_min)

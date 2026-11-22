@@ -95,11 +95,6 @@ class PhaseFieldModel:
             raise ValueError(f"unknown variant '{self.variant}'")
         return grad, mass, source
 
-    @property
-    def has_elastic_stage(self):
-        """AT1 has a true damage threshold and needs a box-constrained solve."""
-        return self.variant == "AT1"
-
     # ---- tensile strain-energy density psi+ at Gauss points ----------
     def psi_plus(self, strain_gp):
         """strain_gp : (..., 3) Voigt strains [exx, eyy, gxy].
@@ -128,4 +123,23 @@ class PhaseFieldModel:
             edev2 = edxx ** 2 + edyy ** 2 + 2.0 * exy ** 2
             return 0.5 * K * tr_p ** 2 + mu * edev2
 
+        raise ValueError(f"unknown split '{self.split}'")
+
+    # ---- compressive (undegraded) strain-energy density psi- ----------
+    def psi_minus(self, strain_gp):
+        """The part of the elastic energy that is NOT degraded by damage.
+
+        ``isotropic`` split: no tension/compression asymmetry, psi- = 0.
+        ``amor`` split: the compressive volumetric part 1/2 K <tr eps>_-^2,
+        which remains fully active in the broken material.  Needed only for a
+        global energy balance (psi+ + psi- = total stored energy); the
+        reaction force and the damage driving force use psi+ alone.
+        """
+        if self.split == "isotropic":
+            return np.zeros(strain_gp.shape[:-1])
+        if self.split == "amor":
+            K = self.material.bulk_2d
+            tr = strain_gp[..., 0] + strain_gp[..., 1]
+            tr_m = np.minimum(tr, 0.0)
+            return 0.5 * K * tr_m ** 2
         raise ValueError(f"unknown split '{self.split}'")

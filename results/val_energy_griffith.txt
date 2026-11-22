@@ -7,4 +7,4 @@ Energy consistency (optimal profile dissipation vs Gc):
   AT1 l=0.06: E_frac=2.7000  err=0.00%
 max 1-D energy error = 0.01%
 
-2-D SENT: peak=566.8 N, E_frac=4.6667, crack_len=1.018, E_frac/Gc=1.728, energy-consistency error=69.8%
+2-D SENT: peak=658.4 N, E_frac=5.0186, crack_len=1.021, E_frac/Gc=1.859, energy-consistency error=82.1%

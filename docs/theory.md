@@ -49,6 +49,13 @@ Minimizing `E` alternately in **u** and `d` gives two sub-problems.
 
 Both are solved subject to the irreversibility constraint `d ≥ d_old`.
 
+> **Note on irreversibility.** The history field `H = max_τ ψ⁺` (Miehe 2010) is
+> a *hybrid* surrogate for the variational inequality, which would instead drive
+> damage with the current `ψ⁺` under the bound `d ≥ d_old` (Pham–Marigo–Maurini
+> 2011). Under the **monotone** loading used in this repository the two are
+> identical, because `ψ⁺` is then nondecreasing in time so `H = ψ⁺`; they differ
+> only on non-monotone paths (unloading/reloading), which are out of scope here.
+
 ## 3. Energy split
 
 * **isotropic** — `ψ⁺ = ½ ε:ℂ:ε`, `ψ⁻ = 0`. Exact for the 1-D benchmarks and
@@ -57,6 +64,11 @@ Both are solved subject to the irreversibility constraint `d ≥ d_old`.
   `ψ⁺ = ½K⟨tr ε⟩₊² + μ e:e`, `ψ⁻ = ½K⟨tr ε⟩₋²`, where `e` is the deviatoric
   strain. Only `ψ⁺` is degraded, which prevents cracking and interpenetration
   under compression — needed for mixed-mode and branching problems.
+  Here the split is taken in the **2-D (plane-strain) convention**: the bulk
+  modulus is `K = λ + μ` and the deviator uses the 2-D trace (`tr ε = εxx + εyy`,
+  no `εzz` term). This is energy-consistent — `½K⟨tr ε⟩² + μ e:e` reproduces the
+  full plane-strain isotropic energy exactly — and differs from Amor's original
+  3-D split (`K = λ + 2μ/3`, deviator including `εzz`).
 
 ## 4. Discretization
 
@@ -92,6 +104,15 @@ for each load increment (adaptive size):
 The load increment is grown while steps converge quickly (elastic regime) and
 shrunk when a step needs many staggered iterations (crack propagation), which
 keeps the total linear-solve count low without a monolithic scheme.
+
+Alternate minimization can need many iterations — or a smaller load step —
+through the unstable brittle snap. A step that exhausts `max_stagger` without
+reaching `tol` is therefore **rejected**: the solver is rolled back to the last
+committed state and the increment is halved and retried (down to `dU_min`),
+rather than committing an unconverged configuration. This keeps the reported
+post-peak force–displacement branch on converged states. (A monolithic or
+hybrid formulation would relax this robustness constraint further and is listed
+as future work.)
 
 ## 6. Verification
 

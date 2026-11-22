@@ -21,8 +21,14 @@ no FEniCSx/DOLFINx/MPI toolchain required.
 Phase-field fracture is the modern variational way to simulate cracks: no crack
 tracking, no remeshing, and nucleation, propagation, branching and merging all
 emerge from energy minimization. This repository implements the method from
-scratch and — crucially — **proves it is correct** by reproducing the
-analytical results the theory guarantees, to within a fraction of a percent.
+scratch and — crucially — **verifies it against the closed-form results the
+theory guarantees**, reproducing them to within a fraction of a percent.
+
+Irreversibility is enforced with the history field `H = max_τ ψ⁺` (Miehe 2010)
+together with a hard `d ≥ d_old` bound — a *hybrid* history-field model. For the
+monotone loading used throughout this repository this coincides exactly with the
+pure variational inequality (current-`ψ⁺` under `d ≥ d_old`, Pham–Marigo–Maurini
+2011); the two differ only on non-monotone paths, which are out of scope here.
 
 ## Highlights
 
@@ -47,7 +53,7 @@ produced by the scripts in [`validation/`](validation/).
 | Optimal crack profile, **AT2** | `d(x)` vs `e^{-|x|/ℓ}` | L2 norm | **< 0.001** |
 | Optimal crack profile, **AT1** | `d(x)` vs `(1-|x|/2ℓ)²` | L2 norm | **< 0.001** |
 | Dissipated energy (Γ-convergence), AT1 & AT2 | `E_frac` vs `Gc` | energy | **≤ 0.01 %** |
-| 2-D SENT crack | force–displacement + crack path | *qualitative* | reproduces brittle snap, straight crack, peak ≈ 0.6 kN |
+| 2-D SENT crack | force–displacement + crack path | *qualitative* | reproduces brittle snap (peak ≈ 0.73 kN, then load collapses to ≈0; at `n=100`, ℓ=0.01) and a straight crack; the peak scales as ℓ^−1/2 and is mesh-dependent on coarse grids |
 
 The 1-D benchmarks are the rigorous quantitative checks (closed-form exact).
 The 2-D cases are qualitative — the diffuse crack's dissipated energy carries a
@@ -172,6 +178,13 @@ See [`docs/theory.md`](docs/theory.md) for the full formulation.
   speed) requires adding a mass term and explicit time stepping — listed as
   future work. Example 3 produces a branch via heterogeneity, not inertia.
 - **2-D plane strain, small strain, isotropic linear elasticity.**
+- **Energy splits: isotropic and Amor (volumetric–deviatoric).** A spectral
+  (principal-strain / Miehe) split is not implemented; Amor is adequate for the
+  tension-dominated cases shown, but a spectral split generally resolves genuine
+  mixed-mode crack paths better — a natural extension.
+- **Staggered (single-split) solver.** No monolithic or hybrid scheme; a hybrid
+  formulation (isotropic driving force for the damage sub-problem) would improve
+  robustness at the brittle snap and is listed as future work.
 - **Structured mesh.** A graded/unstructured mesh would resolve the crack band
   (needs `h ≲ ℓ/2`) more economically; here resolution is set globally.
 - **Direct sparse solves** (SciPy SuperLU): excellent up to ~10⁴–10⁵ dofs, which
