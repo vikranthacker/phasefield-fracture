@@ -87,7 +87,7 @@ python examples/ex02_heterogeneous.py --n 100
 ```
 ![heterogeneous](results/heterogeneous.png)
 
-### 3. Crack branching / path selection among competing channels
+### 3. Path selection among competing weak channels (single-branch selection)
 Two symmetric low-toughness channels diverge ahead of the notch, creating a
 genuine branch point. In the quasi-static energy-minimizing model the crack
 selects **one** channel — once a branch opens it relaxes the driving force for
